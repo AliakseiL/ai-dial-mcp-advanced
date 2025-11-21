@@ -9,7 +9,6 @@ from agent.models.message import Message, Role
 
 
 async def main():
-    #TODO:
     # 1. Take a look what applies DialClient
     # 2. Create empty list where you save tools from MCP Servers later
     # 3. Create empty dict where where key is str (tool name) and value is instance of MCPClient or CustomMCPClient
@@ -19,7 +18,33 @@ async def main():
     # 7. Create DialClient, endpoint is `https://ai-proxy.lab.epam.com`
     # 8. Create array with Messages and add there System message with simple instructions for LLM that it should help to handle user request
     # 9. Create simple console chat (as we done in previous tasks)
-    raise NotImplementedError()
+    tools = []
+    tool_name_client_map = {}
+    ums_mcp_client = await MCPClient.create("http://localhost:8006/mcp")
+    for tool in await ums_mcp_client.get_tools():
+        tools.append(tool)
+        tool_name_client_map[tool.get('function', {}).get('name')] = ums_mcp_client
+    remote_mcp_client = await CustomMCPClient.create("https://remote.mcpservers.org/fetch/mcp")
+    for tool in await remote_mcp_client.get_tools():
+        tools.append(tool)
+        tool_name_client_map[tool.get('function', {}).get('name')] = remote_mcp_client
+    dial_client = DialClient(
+        api_key=os.getenv('DIAL_API_KEY'),
+        endpoint="https://ai-proxy.lab.epam.com",
+        tools=tools,
+        tool_name_client_map=tool_name_client_map
+    )
+    messages = [
+        Message(role=Role.SYSTEM, content="You are an assistant that helps to manage users in the system.")
+    ]
+    while True:
+        user_input = input("> ").strip()
+        if user_input == "exit":
+            break
+        messages.append(Message(role=Role.USER, content=user_input))
+        ai_response = await dial_client.get_completion(messages)
+        messages.append(ai_response)
+        print(f"\nAssistant: {ai_response.content}")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -7,26 +7,36 @@ class SearchUsersTool(BaseUserServiceTool):
 
     @property
     def name(self) -> str:
-        #TODO: Provide tool name as `search_users`
-        raise NotImplementedError()
+        # Provide tool name as `search_users`
+        return "search_users"
 
     @property
     def description(self) -> str:
-        #TODO: Provide description of this tool
-        raise NotImplementedError()
+        # Short description of the tool
+        return "Search users by optional filters: name, surname, email, gender"
 
     @property
     def input_schema(self) -> dict[str, Any]:
-        #TODO:
-        # Provide tool params Schema:
-        # - name: str
-        # - surname: str
-        # - email: str
-        # - gender: str
-        # None of them are required (see UserClient.search_users method)
-        raise NotImplementedError()
+        # Provide tool params Schema: optional filters
+        return {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "surname": {"type": "string"},
+                "email": {"type": "string"},
+                "gender": {"type": "string"},
+            },
+            "required": []
+        }
 
     async def execute(self, arguments: dict[str, Any]) -> str:
-        #TODO:
-        # Call user_client search_users (with `**arguments`) and return its results (it is async, don't forget to await)
-        raise NotImplementedError()
+        # Call user_client search_users (with `**arguments`) and return its results
+        # Pass only keys that exist to avoid unexpected None handling
+        params = {k: v for k, v in arguments.items() if v is not None}
+        result = await self._user_client.search_users(
+            name=params.get("name"),
+            surname=params.get("surname"),
+            email=params.get("email"),
+            gender=params.get("gender"),
+        )
+        return result
